@@ -239,7 +239,7 @@
         NSAssert(title == nil, @"Unexpected type of segment title: %@", [title class]);
         size = CGSizeZero;
     }
-    return CGRectIntegral((CGRect){CGPointZero, size}).size;
+    return CGRectIntegral((CGRect){CGPointZero, CGSizeMake(size.width, self.frame.size.height)}).size;
 }
 
 - (NSAttributedString *)attributedTitleAtIndex:(NSUInteger)index {
@@ -247,7 +247,11 @@
     BOOL selected = (index == self.selectedSegmentIndex) ? YES : NO;
     
     if ([title isKindOfClass:[NSAttributedString class]]) {
-        return (NSAttributedString *)title;
+        NSMutableAttributedString *result = (NSMutableAttributedString *)title;
+        NSRange range = NSMakeRange(0,result.string.length > 0 ? result.string.length - 1 : 0);
+        NSDictionary *titleAttrs = selected ? [self resultingSelectedTitleTextAttributes] : [self resultingTitleTextAttributes];
+        [result setAttributes:titleAttrs range:range];
+        return result;
     } else if (!self.titleFormatter) {
         NSDictionary *titleAttrs = selected ? [self resultingSelectedTitleTextAttributes] : [self resultingTitleTextAttributes];
         
@@ -325,17 +329,21 @@
             // Fix rect position/size to avoid blurry labels
             rect = CGRectMake(ceilf(rect.origin.x), ceilf(rect.origin.y), ceilf(rect.size.width), ceilf(rect.size.height));
             
-            CATextLayer *titleLayer = [CATextLayer layer];
-            titleLayer.frame = rect;
-            titleLayer.alignmentMode = kCAAlignmentCenter;
-            if ([UIDevice currentDevice].systemVersion.floatValue < 10.0 ) {
-                titleLayer.truncationMode = kCATruncationEnd;
-            }
-            titleLayer.string = [self attributedTitleAtIndex:idx];
-            titleLayer.contentsScale = [[UIScreen mainScreen] scale];
-            
-            [self.scrollView.layer addSublayer:titleLayer];
-            
+//            CATextLayer *titleLayer = [CATextLayer layer];
+//            titleLayer.frame = rect;
+//            titleLayer.alignmentMode = kCAAlignmentCenter;
+//            if ([UIDevice currentDevice].systemVersion.floatValue < 10.0 ) {
+//                titleLayer.truncationMode = kCATruncationEnd;
+//            }
+//            titleLayer.string = [self attributedTitleAtIndex:idx];
+//            titleLayer.contentsScale = [[UIScreen mainScreen] scale];
+
+//            [self.scrollView.layer addSublayer:titleLayer];
+            UILabel *label = [[UILabel alloc] initWithFrame:rect];
+            label.attributedText = [self attributedTitleAtIndex:idx];
+            label.textAlignment = NSTextAlignmentCenter;
+            [self.scrollView addSubview:label];
+
             // Vertical Divider
             if (self.isVerticalDividerEnabled && idx > 0) {
                 CALayer *verticalDividerLayer = [CALayer layer];
@@ -621,7 +629,7 @@
             CGFloat widthToStartOfSelectedIndex = (self.segmentWidth * self.selectedSegmentIndex);
             
             CGFloat x = ((widthToEndOfSelectedSegment - widthToStartOfSelectedIndex) / 2) + (widthToStartOfSelectedIndex - sectionWidth / 2);
-            return CGRectMake(x + self.selectionIndicatorEdgeInsets.left, indicatorYOffset, sectionWidth - self.selectionIndicatorEdgeInsets.right, self.selectionIndicatorHeight);
+            return CGRectMake(x + self.selectionIndicatorEdgeInsets.left - 8, indicatorYOffset, sectionWidth - self.selectionIndicatorEdgeInsets.right + 16, self.selectionIndicatorHeight);
         } else {
             if (self.segmentWidthStyle == HMSegmentedControlSegmentWidthStyleDynamic) {
                 CGFloat selectedSegmentOffset = 0.0f;
